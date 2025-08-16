@@ -38,4 +38,6 @@ import { initGalleryRaidsScroll } from "./trackers/gallery_raids_scroll.js";
   initClickLinksArtstation();
   initClickLinks3dGuide();
   initGalleryRaidsScroll();
+
+  console.log("[main.js] initialized and trackers hooked");
 })();

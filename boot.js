@@ -47,4 +47,6 @@
   window.visitId=visitId;
   window.sessionId=sessionId;
   window.visitSource=source||getSource();
+
+  console.log("[boot.js] initialized: visitId =", window.visitId, "sessionId =", window.sessionId, "source =", window.visitSource);
 })();
