@@ -2,8 +2,18 @@ import { post, onReady } from "../utils.js";
 
 // не чаще одного события в 3 секунды
 const SCROLL_THROTTLE_MS = 5000;
-const MAX_STEP_TO_SEND = 10; // шлём, если max_depth вырос >= на 10%
 
+// --- правила распознавания секций ---
+const SECTION_RULES = [
+  { key: "hero",           anchor: /^top$|^home$/i,       title: /retry|hero/i },
+  { key: "benefits",       anchor: /benefits|why/i,       title: /почему|зачем/i },
+  { key: "faq",            anchor: /faq/i,                title: /faq|вопрос/i },
+  { key: "job_chance",     anchor: /job|work|career/i,    title: /смогу ли я получить работу/i },
+  { key: "gallery_raids",  anchor: /raids|gallery/i,      title: /raid|рейд|галере/i },
+  { key: "buy",            anchor: /buy|order|price/i,    title: /купить|доступ|цена/i },
+];
+
+// --- helpers ---
 function getDepthPct(){
   const se = document.scrollingElement || document.documentElement || document.body;
   if (!se) return 0;
@@ -18,92 +28,87 @@ function getDepthPct(){
   return Math.min(100, Math.round((y / maxScroll) * 100));
 }
 
-// пытаемся понять “до какого раздела доскроллил”
-// приоритет: tilda records (#rec...), section[id], ещё пробуем data-menu-anchor и типичные заголовки
 const TITLE_SEL = 'h1,h2,h3,.t-section__title,.t-title,.t-name,.t-name_xl,.t668__title,.t228__title,[data-elem-type="title"]';
 
-function getLastVisibleSection(){
-  const vpBottom = window.scrollY + window.innerHeight;
+function readAnchor(el){
+  return el.getAttribute('data-menu-anchor')
+      || el.querySelector('[data-menu-anchor]')?.getAttribute('data-menu-anchor')
+      || null;
+}
+function readTitle(el){
+  return (el.querySelector(TITLE_SEL)?.textContent || "").trim();
+}
+function resolveSectionKey(el){
+  const anchor = (readAnchor(el) || "").toLowerCase();
+  const title  = (readTitle(el)  || "").toLowerCase();
+  const id     = (el.id || "").toLowerCase();
 
-  const records  = Array.from(document.querySelectorAll('[id^="rec"]'));
-  const sections = Array.from(document.querySelectorAll('section[id]'));
-  const candidates = [...records, ...sections];
-
-  let lastEl = null;
-  let lastTop = -Infinity;
-
-  for (const el of candidates){
-    if (!(el instanceof Element)) continue;
-    const r = el.getBoundingClientRect();
-    const topAbs = r.top + window.scrollY;
-    if (topAbs <= vpBottom - 100 && topAbs > lastTop){
-      lastTop = topAbs;
-      lastEl = el;
-    }
+  for (const r of SECTION_RULES){
+    const aok = r.anchor ? new RegExp(r.anchor).test(anchor) || new RegExp(r.anchor).test(id) : false;
+    const tok = r.title  ? new RegExp(r.title).test(title) : false;
+    if (aok || tok) return r.key;
   }
-  if (!lastEl) return null;
-
-  const anchor =
-    lastEl.getAttribute('data-menu-anchor') ||
-    lastEl.querySelector('[data-menu-anchor]')?.getAttribute('data-menu-anchor') ||
-    null;
-
-  const section_id = lastEl.id || anchor || null;
-
-  // читаемый заголовок
-  const titleEl = lastEl.querySelector(TITLE_SEL);
-  const rawTitle = (titleEl?.textContent || '').trim();
-  const section_title = rawTitle || (anchor ? `#${anchor}` : null);
-
-  if (!section_id && !section_title) return null;
-  return { section_id: section_id || null, section_title: section_title || null };
+  return null;
 }
 
+function getLastVisibleSectionDeterministic(){
+  const vpBottom = window.scrollY + window.innerHeight;
+  const candidates = [
+    ...document.querySelectorAll('[id^="rec"]'),
+    ...document.querySelectorAll('section[id]')
+  ];
+
+  let best = null, bestTop = -Infinity;
+  for (const el of candidates){
+    const r = el.getBoundingClientRect();
+    const topAbs = r.top + window.scrollY;
+    if (topAbs <= vpBottom - 100 && topAbs > bestTop){
+      const key = resolveSectionKey(el);
+      if (key){
+        best = { el, key, title: readTitle(el), id: el.id || readAnchor(el) || null };
+        bestTop = topAbs;
+      }
+    }
+  }
+  return best;
+}
+
+// --- основной модуль ---
 export function initScrollDepth(){
   onReady(()=>{
     let lastSentAt = 0;
     let pending = false;
-
-    let maxDepthPct = 0;     // текущий максимум на странице
-    let lastMaxSent = 0;     // максимум, с которым мы последний раз отправляли
-    let lastSectionIdSent = null; // последняя отправленная секция
+    let maxDepthPct = 0;
+    let lastMaxSent = 0;
+    let lastSectionKeySent = null;
 
     function buildMeta(){
       const curr = getDepthPct();
       if (curr > maxDepthPct) maxDepthPct = curr;
 
-      const sec = getLastVisibleSection();
+      const sec = getLastVisibleSectionDeterministic();
       return {
         depth_pct: curr,
         max_depth_pct: maxDepthPct,
-        ...(sec ? sec : {})
+        ...(sec ? { section_key: sec.key, section_id: sec.id || null, section_title: sec.title || null } : {})
       };
     }
 
     function shouldSend(meta){
-      // не отправляем "пустые" секции
-      const sectionChanged = meta.section_id && meta.section_id !== lastSectionIdSent;
-      const maxJumped      = meta.max_depth_pct >= (lastMaxSent + MAX_STEP_TO_SEND);
-
+      const sectionChanged = meta.section_key && meta.section_key !== lastSectionKeySent;
+      const maxJumped = meta.max_depth_pct >= (lastMaxSent + 10);
       return sectionChanged || maxJumped;
     }
 
     function sendNow(force=false){
       const meta = buildMeta();
       if (!force && !shouldSend(meta)) return;
-
-      // обновляем «последние отправленные»
       if (meta.max_depth_pct > lastMaxSent) lastMaxSent = meta.max_depth_pct;
-      if (meta.section_id) lastSectionIdSent = meta.section_id;
-
+      if (meta.section_key) lastSectionKeySent = meta.section_key;
       post("scroll_depth", meta);
     }
 
     function onScrollThrottled(){
-      // держим актуальным максимум даже между отправками
-      const curr = getDepthPct();
-      if (curr > maxDepthPct) maxDepthPct = curr;
-
       const now = Date.now();
       if (now - lastSentAt >= SCROLL_THROTTLE_MS){
         lastSentAt = now;
@@ -118,15 +123,16 @@ export function initScrollDepth(){
       }
     }
 
+    // источники скролла/изменений
     addEventListener("scroll",     onScrollThrottled, { passive:true });
     addEventListener("wheel",      onScrollThrottled, { passive:true });
     addEventListener("touchmove",  onScrollThrottled, { passive:true });
     addEventListener("resize",     onScrollThrottled, { passive:true });
 
-    // старт: ничего не шлём сразу, ждём реального изменения
-    // onScrollThrottled();
+    // стартовый снимок
+    onScrollThrottled();
 
-    // финальный пинг при уходе — всегда один раз, даже без изменений
+    // финальный пинг при уходе
     addEventListener("pagehide", () => { sendNow(true); }, { passive:true });
   });
 }
