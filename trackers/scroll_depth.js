@@ -36,13 +36,23 @@ function getLastVisibleSection(){
     }
   }
   if (!lastEl) return null;
+
   const id = lastEl.id || null;
-  const title =
+  let title =
     lastEl.getAttribute?.('data-title')
     || lastEl.querySelector?.('h1,h2,h3')?.textContent?.trim()
     || null;
-  return { section_id: id, section_title: title };
+
+  // Фолбэк: если нет title, подставляем id
+  if (!title) title = id || null;
+
+  // Дополнительно порядковый номер секции (для аналитики)
+  const siblings = [...document.querySelectorAll('[id^="rec"],section[id],[id]:not([id^="rec"])')];
+  const index = siblings.indexOf(lastEl);
+
+  return { section_id: id, section_title: title, section_index: index };
 }
+
 
 export function initScrollDepth(){
   onReady(()=>{
@@ -53,8 +63,9 @@ export function initScrollDepth(){
 
     function buildMeta(){
       const sec = getLastVisibleSection();
+      const depth = getDepthPct();
       return {
-        depth_pct: getDepthPct(),
+        depth_pct: depth,
         max_depth_pct: maxDepthPct,
         ...(sec ? sec : {})
       };
@@ -73,7 +84,6 @@ export function initScrollDepth(){
       const sec = getLastVisibleSection();
       const secId = sec?.section_id || null;
 
-      // если не изменилось ничего важного — не шлём
       if (curr <= maxDepthPct && secId === lastSectionId) return;
 
       lastSectionId = secId;
