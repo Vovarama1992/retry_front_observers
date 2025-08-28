@@ -17,6 +17,7 @@ import { initClickLinksInstagram } from "./trackers/click_links_instagram.js";
 import { initClickLinksArtstation } from "./trackers/click_links_artstation.js";
 import { initClickLinks3dGuide } from "./trackers/click_links_3d_guide.js";
 import { initGalleryRaidsScroll } from "./trackers/gallery_raids_scroll.js";
+import { initClickProceedToPayment } from "./trackers/click_proceed_to_payment.js";
 
 (function(){
   initClickCtaTop();
@@ -38,6 +39,8 @@ import { initGalleryRaidsScroll } from "./trackers/gallery_raids_scroll.js";
   initClickLinksArtstation();
   initClickLinks3dGuide();
   initGalleryRaidsScroll();
+  initClickProceedToPayment();
+
 
   console.log("[main.js] initialized and trackers hooked");
 })();

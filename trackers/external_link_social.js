@@ -5,7 +5,7 @@ const SOCIAL_DOMAINS = {
   youtube: ["youtube.com","youtu.be"],
   instagram: ["instagram.com"],
   tiktok: ["tiktok.com"],
-  artstation: ["artstation.com"],
+  // artstation убираем отсюда! 
   vk: ["vk.com"],
   facebook: ["facebook.com"],
   twitter: ["twitter.com","x.com"],
