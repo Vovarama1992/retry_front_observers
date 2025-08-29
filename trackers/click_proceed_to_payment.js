@@ -10,13 +10,21 @@ export function initClickProceedToPayment() {
           : null;
         if (!btn) return;
 
-        const form = btn.closest("form");
-        if (!form) return;
+        // нашли кнопку — уже логируем
+        console.debug("[retry] найдена кнопка 'Перейти к оплате'", btn);
 
-        // ищем выбранный способ оплаты в рамках этой формы
-        const selected = form.querySelector("input.t-radio_payment:checked");
+        // ищем контейнер — форма если есть, иначе fallback
+        const root =
+          btn.closest("form") ||
+          btn.closest('[data-payment-root]') ||
+          document;
+
+        const selected = root.querySelector("input.t-radio_payment:checked");
         const method =
           selected?.value || selected?.dataset.paymentVariantSystem || null;
+
+        // всегда логируем найденный метод (даже если null)
+        console.debug("[retry] click_proceed_to_payment", { method, root });
 
         post("click_proceed_to_payment", { name: method });
       },
