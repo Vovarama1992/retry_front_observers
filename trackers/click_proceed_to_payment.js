@@ -3,14 +3,15 @@ import { post, onReady } from "../utils.js";
 export function initClickProceedToPayment() {
   onReady(() => {
     document.addEventListener(
-      "submit",
+      "click",
       (e) => {
-        const form = e.target;
-        if (!(form instanceof HTMLFormElement)) return;
+        const btn = e.target instanceof Element
+          ? e.target.closest("button.t-submit.t-btnflex_type_submit")
+          : null;
+        if (!btn) return;
 
-        // проверяем, что форма содержит нашу кнопку "Перейти к оплате"
-        const submitBtn = form.querySelector("button.t-submit.t-btnflex_type_submit");
-        if (!submitBtn) return;
+        const form = btn.closest("form");
+        if (!form) return;
 
         // ищем выбранный способ оплаты в рамках этой формы
         const selected = form.querySelector("input.t-radio_payment:checked");
@@ -19,7 +20,7 @@ export function initClickProceedToPayment() {
 
         post("click_proceed_to_payment", { name: method });
       },
-      { capture: true, passive: true }
+      { capture: true }
     );
   });
 }
