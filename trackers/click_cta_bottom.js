@@ -19,6 +19,11 @@ function mark(root = document) {
   });
 }
 
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
 export function initClickCtaBottom() {
   onReady(() => {
     document.addEventListener(
@@ -27,8 +32,7 @@ export function initClickCtaBottom() {
         let n = e.target instanceof Element ? e.target : null;
         while (n && n !== document.body) {
           if (n.closest?.('[data-track="click_cta_bottom"]') || matches(n)) {
-            const target =
-              n.closest('[data-track="click_cta_bottom"]') || n;
+            const target = n.closest?.('[data-track="click_cta_bottom"]') || n;
             if (target.dataset.track !== "click_cta_bottom") {
               target.setAttribute("data-track", "click_cta_bottom");
             }
@@ -36,19 +40,21 @@ export function initClickCtaBottom() {
             // твоя аналитика
             post("click_cta_bottom");
 
-            // Лог: факт клика и проверка Roistat
-            console.log("[Roistat] CTA bottom clicked. window.roistat =", window.roistat);
+            // Диагностика Roistat
+            const visit = getCookie("roistat_visit");
+            console.log("[Roistat] CTA bottom clicked. visit =", visit, "obj =", window.roistat);
 
-            // Roistat: отправляем лид + логируем
-            if (window.roistat && window.roistat.lead) {
+            // Roistat: событие
+            if (window.roistat?.event?.send) {
               const payload = {
-                name: "CTA bottom click",
-                fields: { button: "cta_bottom" }
+                button: "cta_bottom",
+                visit: visit || null,
+                page: location.pathname || "/"
               };
-              console.log("[Roistat] lead.send available, sending:", payload);
-              roistat.lead.send(payload);
+              console.log("[Roistat] event.send('cta_bottom', payload):", payload);
+              window.roistat.event.send("cta_bottom", payload);
             } else {
-              console.warn("[Roistat] lead.send NOT available.");
+              console.warn("[Roistat] event.send NOT available.");
             }
 
             return;
