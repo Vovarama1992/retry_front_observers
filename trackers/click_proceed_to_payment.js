@@ -39,7 +39,14 @@ export function initClickProceedToPayment() {
             page: location.pathname || "/",
           };
           console.log("[RoistatLead] отправка лида:", payload);
-          window.roistat.event.send("lead", payload);
+
+          try {
+            window.roistat.event.send("lead", payload, () => {
+              console.log("[RoistatLead] ✅ успешно отправлено:", payload);
+            });
+          } catch (err) {
+            console.error("[RoistatLead] ❌ ошибка при отправке:", err);
+          }
         } else {
           console.warn("[RoistatLead] roistat.event.send недоступен", window.roistat);
         }
