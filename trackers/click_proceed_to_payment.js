@@ -1,33 +1,43 @@
 import { post, onReady } from "../utils.js";
 
 export function initClickProceedToPayment() {
-  console.debug("[retry] initClickProceedToPayment загружен");
+  console.debug("[retry] initClickProceedToPayment загружен"); // скрипт точно попал на страницу
+
   onReady(() => {
     console.debug("[retry] initClickProceedToPayment onReady сработал");
+
     document.addEventListener(
-      "click",
+      "submit",
       (e) => {
-        console.debug("[retry] document click перехвачен");
-        const btn = e.target instanceof Element
-          ? e.target.closest("button.t-submit.t-btnflex_type_submit")
-          : null;
-        if (!btn) return;
+        console.debug("[retry] событие submit поймано", e.target);
 
-        console.debug("[retry] найдена кнопка 'Перейти к оплате'", btn);
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) {
+          console.debug("[retry] target не форма, выходим");
+          return;
+        }
 
-        const root =
-          btn.closest("form") ||
-          btn.closest('[data-payment-root]') ||
-          document;
+        // проверяем, что форма содержит нашу кнопку "Перейти к оплате"
+        const submitBtn = form.querySelector("button.t-submit.t-btnflex_type_submit");
+        if (!submitBtn) {
+          console.debug("[retry] в форме нет кнопки 'Перейти к оплате'");
+          return;
+        }
+        console.debug("[retry] найдена кнопка 'Перейти к оплате'", submitBtn);
 
-        const selected = root.querySelector("input.t-radio_payment:checked");
+        // ищем выбранный способ оплаты в рамках этой формы
+        const selected = form.querySelector("input.t-radio_payment:checked");
         const method =
           selected?.value || selected?.dataset.paymentVariantSystem || null;
 
-        console.debug("[retry] click_proceed_to_payment", { method, root });
+        console.debug("[retry] выбранный метод оплаты:", method);
+
         post("click_proceed_to_payment", { name: method });
+        console.debug("[retry] post вызван с type=click_proceed_to_payment");
       },
-      { capture: true }
+      { capture: true, passive: true }
     );
+
+    console.debug("[retry] обработчик submit навешан");
   });
 }
