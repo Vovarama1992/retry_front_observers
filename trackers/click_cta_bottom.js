@@ -19,11 +19,6 @@ function mark(root = document) {
   });
 }
 
-function getCookie(name) {
-  const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
 export function initClickCtaBottom() {
   onReady(() => {
     document.addEventListener(
@@ -39,23 +34,6 @@ export function initClickCtaBottom() {
 
             // твоя аналитика
             post("click_cta_bottom");
-
-            // Диагностика Roistat
-            const visit = getCookie("roistat_visit");
-            console.log("[Roistat] CTA bottom clicked. visit =", visit, "obj =", window.roistat);
-
-            // Roistat: событие
-            if (window.roistat?.event?.send) {
-              const payload = {
-                button: "cta_bottom",
-                visit: visit || null,
-                page: location.pathname || "/"
-              };
-              console.log("[Roistat] event.send('cta_bottom', payload):", payload);
-              window.roistat.event.send("cta_bottom", payload);
-            } else {
-              console.warn("[Roistat] event.send NOT available.");
-            }
 
             return;
           }
