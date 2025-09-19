@@ -42,5 +42,5 @@ import { initClickProceedToPayment } from "./trackers/click_proceed_to_payment.j
   initClickProceedToPayment();
 
 
-  console.log("[main.js] initialized and trackers hooked");
+  console.log("[main.js] initialized and trackers hooked with roistat");
 })();

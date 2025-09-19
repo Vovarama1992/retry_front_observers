@@ -36,6 +36,9 @@ export function initClickCtaBottom() {
             // твоя аналитика
             post("click_cta_bottom");
 
+            // Лог: факт клика и проверка Roistat
+            console.log("[Roistat] CTA bottom clicked. window.roistat =", window.roistat);
+
             // Roistat: отправляем лид + логируем
             if (window.roistat && window.roistat.lead) {
               const payload = {
@@ -45,7 +48,7 @@ export function initClickCtaBottom() {
               console.log("[Roistat] lead.send available, sending:", payload);
               roistat.lead.send(payload);
             } else {
-              console.warn("[Roistat] lead.send NOT available. window.roistat =", window.roistat);
+              console.warn("[Roistat] lead.send NOT available.");
             }
 
             return;
