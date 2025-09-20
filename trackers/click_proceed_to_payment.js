@@ -25,50 +25,14 @@ export function initClickProceedToPayment() {
         const social = form.querySelector("input[name='social_link']")?.value || null;
 
         const selected = form.querySelector("input.t-radio_payment:checked");
-        const payment = selected?.value || selected?.dataset.paymentVariantSystem || null;
+        const method =
+          selected?.value || selected?.dataset.paymentVariantSystem || null;
 
-        console.debug("[retry] значения из формы:", { email, social, payment });
+        console.debug("[retry] значения из формы:", { email, social, name: method });
 
         // твой backend
-        post("click_proceed_to_payment", { email, social, payment });
-        console.debug("[retry] post вызван для backend с email/social/payment");
-
-        // Roistat proxyLead
-        const visit = (document.cookie.match(/(?:^|;\s*)roistat_visit=([^;]+)/) || [])[1] || null;
-
-        if (visit) {
-          const apiKey = "ebfba41f50aeb0373aae28d692d5fa71";
-          const url = `https://cloud.roistat.com/api/proxy/1.0/leads?key=${apiKey}&roistat_visit=${visit}`;
-
-          const payload = {
-            title: "Перейти к оплате",
-            email: email,
-            fields: {
-              social_link: social,
-              payment_method: payment,
-              page: location.pathname || "/",
-            },
-          };
-
-          console.log("[RoistatLead] отправка проксилида:", payload);
-
-          fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              console.log("[RoistatLead] ✅ ответ:", data);
-            })
-            .catch((err) => {
-              console.error("[RoistatLead] ❌ ошибка при отправке:", err);
-            });
-        } else {
-          console.warn("[RoistatLead] не найден roistat_visit в cookie");
-        }
+        post("click_proceed_to_payment", { email, social, name: method });
+        console.debug("[retry] post вызван для backend с email/social/name");
       },
       { capture: true, passive: true }
     );
@@ -76,5 +40,4 @@ export function initClickProceedToPayment() {
     console.debug("[retry] обработчик клика по кнопке 'Перейти к оплате' навешан");
   });
 }
-
 
