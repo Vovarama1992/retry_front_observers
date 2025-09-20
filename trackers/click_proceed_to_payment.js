@@ -25,30 +25,44 @@ export function initClickProceedToPayment() {
         const social = form.querySelector("input[name='social_link']")?.value || null;
         console.debug("[retry] значения из формы:", { email, social });
 
-        // твой backend
+        // твой backend (оставляем, но он тут ни при чём)
         post("click_proceed_to_payment", { email, social });
         console.debug("[retry] post вызван для backend с email/social");
 
-        // Roistat
+        // Roistat proxyLead
         const visit = (document.cookie.match(/(?:^|;\s*)roistat_visit=([^;]+)/) || [])[1] || null;
-        if (window.roistat?.event?.send) {
-          const payload = {
-            email,
-            social_link: social,
-            visit,
-            page: location.pathname || "/",
-          };
-          console.log("[RoistatLead] отправка лида:", payload);
 
-          try {
-            window.roistat.event.send("lead", payload, () => {
-              console.log("[RoistatLead] ✅ успешно отправлено:", payload);
+        if (visit) {
+          const apiKey = "ebfba41f50aeb0373aae28d692d5fa71";
+          const url = `https://cloud.roistat.com/api/proxy/1.0/leads?key=${apiKey}&roistat_visit=${visit}`;
+
+          const payload = {
+            title: "Перейти к оплате",
+            email: email,
+            fields: {
+              social_link: social,
+              page: location.pathname || "/",
+            },
+          };
+
+          console.log("[RoistatLead] отправка проксилида:", payload);
+
+          fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              console.log("[RoistatLead] ✅ ответ:", data);
+            })
+            .catch((err) => {
+              console.error("[RoistatLead] ❌ ошибка при отправке:", err);
             });
-          } catch (err) {
-            console.error("[RoistatLead] ❌ ошибка при отправке:", err);
-          }
         } else {
-          console.warn("[RoistatLead] roistat.event.send недоступен", window.roistat);
+          console.warn("[RoistatLead] не найден roistat_visit в cookie");
         }
       },
       { capture: true, passive: true }
