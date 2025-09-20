@@ -28,6 +28,17 @@ export function initClickProceedToPayment() {
         const method =
           selected?.value || selected?.dataset.paymentVariantSystem || null;
 
+        // roistat_visit из cookie
+        const roistatVisit =
+          (document.cookie.match(/(?:^|;\s*)roistat_visit=([^;]+)/) || [])[1] ||
+          null;
+
+        if (roistatVisit) {
+          console.log("[Roistat] найден roistat_visit:", roistatVisit);
+        } else {
+          console.warn("[Roistat] ⚠️ roistat_visit не найден в cookie");
+        }
+
         const payload = {
           email,
           social,
@@ -35,8 +46,9 @@ export function initClickProceedToPayment() {
           meta: {
             email,
             social_link: social,
-            name: method,
+            name: method, // метод оплаты
             page: location.pathname || "/",
+            roistat_visit: roistatVisit,
           },
         };
 
