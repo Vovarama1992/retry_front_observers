@@ -23,11 +23,15 @@ export function initClickProceedToPayment() {
         // вытащим данные из формы
         const email = form.querySelector("input[name='Email']")?.value || null;
         const social = form.querySelector("input[name='social_link']")?.value || null;
-        console.debug("[retry] значения из формы:", { email, social });
 
-        // твой backend (оставляем, но он тут ни при чём)
-        post("click_proceed_to_payment", { email, social });
-        console.debug("[retry] post вызван для backend с email/social");
+        const selected = form.querySelector("input.t-radio_payment:checked");
+        const payment = selected?.value || selected?.dataset.paymentVariantSystem || null;
+
+        console.debug("[retry] значения из формы:", { email, social, payment });
+
+        // твой backend
+        post("click_proceed_to_payment", { email, social, payment });
+        console.debug("[retry] post вызван для backend с email/social/payment");
 
         // Roistat proxyLead
         const visit = (document.cookie.match(/(?:^|;\s*)roistat_visit=([^;]+)/) || [])[1] || null;
@@ -41,6 +45,7 @@ export function initClickProceedToPayment() {
             email: email,
             fields: {
               social_link: social,
+              payment_method: payment,
               page: location.pathname || "/",
             },
           };
@@ -71,3 +76,5 @@ export function initClickProceedToPayment() {
     console.debug("[retry] обработчик клика по кнопке 'Перейти к оплате' навешан");
   });
 }
+
+
