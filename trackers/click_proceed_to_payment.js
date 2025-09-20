@@ -28,11 +28,27 @@ export function initClickProceedToPayment() {
         const method =
           selected?.value || selected?.dataset.paymentVariantSystem || null;
 
-        console.debug("[retry] значения из формы:", { email, social, name: method });
+        const payload = {
+          email,
+          social,
+          name: method,
+          meta: {
+            email,
+            social_link: social,
+            name: method,
+            page: location.pathname || "/",
+          },
+        };
 
-        // твой backend
-        post("click_proceed_to_payment", { email, social, name: method });
-        console.debug("[retry] post вызван для backend с email/social/name");
+        console.log("[CRM] 🚀 отправка в нашу CRM:", payload);
+
+        post("click_proceed_to_payment", payload)
+          .then((resp) => {
+            console.log("[CRM] ✅ ответ из нашей CRM получен:", resp);
+          })
+          .catch((err) => {
+            console.error("[CRM] ❌ ошибка при отправке в CRM:", err);
+          });
       },
       { capture: true, passive: true }
     );
@@ -40,4 +56,3 @@ export function initClickProceedToPayment() {
     console.debug("[retry] обработчик клика по кнопке 'Перейти к оплате' навешан");
   });
 }
-
