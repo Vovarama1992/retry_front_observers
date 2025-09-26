@@ -54,6 +54,7 @@ export function initClickProceedToPayment() {
 
         console.log("[CRM] 🚀 отправка в нашу CRM:", payload);
 
+        // Отправляем в CRM
         post("click_proceed_to_payment", payload)
           .then((resp) => {
             console.log("[CRM] ✅ ответ из нашей CRM получен:", resp);
@@ -61,6 +62,19 @@ export function initClickProceedToPayment() {
           .catch((err) => {
             console.error("[CRM] ❌ ошибка при отправке в CRM:", err);
           });
+
+        // Отправляем событие в Яндекс.Метрику
+        if (typeof ym === "function") {
+          try {
+            ym(102345100, "reachGoal", "proceed_to_payment", {}, () => {
+              console.log("[YM] ✅ событие 'proceed_to_payment' отправлено успешно");
+            });
+          } catch (err) {
+            console.error("[YM] ❌ ошибка при вызове ym:", err);
+          }
+        } else {
+          console.warn("[YM] ⚠️ функция ym не найдена — код счётчика Метрики не подключён");
+        }
       },
       { capture: true, passive: true }
     );
